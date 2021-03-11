@@ -1,0 +1,4 @@
+(executable
+ (name main)
+ (libraries core sedlex sedlex.ppx)
+ (preprocess (pps ppx_let sedlex.ppx)))
