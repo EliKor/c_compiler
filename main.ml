@@ -1,16 +1,10 @@
-open Lexer
-
-let rec get_token lexbuf channel = 
-  let curr_token = tokenize lexbuf in
-  if curr_token = EOF then close_in channel
-  else
-    curr_token |> token_to_string |> print_endline;
-    get_token lexbuf channel
+open Parser
 
 let compile file = 
   let channel = open_in file in
   let lexbuf = Sedlexing.Utf8.from_channel channel in
-  get_token lexbuf channel
+  let program = parse lexbuf channel in
+  pp_program program
 
 let () = 
   let args = Sys.argv |> Array.to_list in
