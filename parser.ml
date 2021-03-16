@@ -1,6 +1,7 @@
 open Lexer
 
-type expr = Const of int
+type op = Neg | Bitwise_comp | Logical_neg 
+type expr = Unop of op * expr | Const of int
 type statement = Return of expr
 type parameter = Param of string
 type fun_header = Fun_Header of string * parameter list
@@ -20,9 +21,16 @@ let build_level_str level =
   let spaces_lst = create_spaces [] level in
   String.concat " " spaces_lst
 
-let pp_expr e =
+let pp_op op =
+  match op with
+  | Neg -> print_char '-'
+  | Bitwise_comp -> print_char '~'
+  | Logical_neg -> print_char '!'
+
+let rec pp_expr e =
   match e with
   | Const i -> print_string (string_of_int i)
+  | Unop (op, e') -> pp_op op; pp_expr e'
 
 let rec pp_params params =
   match params with
@@ -81,18 +89,31 @@ let parse_fun_header lexbuf =
     Fun_Header (n, args)
   | _ -> raise Parsing_exception
 
-let parse_expression lexbuf =
-  let e = get_token lexbuf in
-  match e with
+let op_of_token tok =
+  match tok with
+  | NEG -> Neg
+  | BIT_COMP -> Bitwise_comp
+  | LOG_NEG -> Logical_neg
+  | _ -> raise Parsing_exception
+
+let rec parse_unop t lexbuf =
+  let op = op_of_token t in
+  Unop (op, parse_expression lexbuf)
+and parse_expression lexbuf =
+  let t = get_token lexbuf in
+  match t with
   | INT i -> Const i
+  | NEG 
+  | BIT_COMP 
+  | LOG_NEG -> parse_unop t lexbuf
   | _ -> raise Parsing_exception
 
 let parse_statement lexbuf = 
   let ret = get_token lexbuf in
   let expression = parse_expression lexbuf in
   let semicolon = get_token lexbuf in
-  match ret, expression, semicolon with
-  | RETURN, Const i, SEMICOLON -> Return (Const i)
+  match ret, semicolon with
+  | RETURN, SEMICOLON -> Return expression 
   | _ -> raise Parsing_exception
 
 let parse_body lexbuf = 
