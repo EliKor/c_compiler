@@ -7,15 +7,8 @@ let rec last = function
 | _::t -> last t
 
 let get_program_name path =
-  (* let path_lst = String.split_on_char '/' path in *)
-  (* let end_of_path =  *)
-    (* match last path_lst with *)
-    (* | Some file -> file *)
-    (* | None -> print_endline "Empty path specified"; exit 1 *)
-  (* in *)
-  match String.split_on_char '.' path with
-  | name::ext::[] when ext = "c" -> name 
-  | _ -> print_endline "File must end with a .c extension"; exit 1
+  if Filename.extension path = ".c" then Filename.remove_extension path
+  else (print_endline "File must have .c extension"; exit 1)
 
 let compile path = 
   let program_name = get_program_name path in
