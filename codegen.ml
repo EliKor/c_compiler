@@ -25,6 +25,7 @@ let rec gen_expr e asm_channel =
 | Unop (unop, e') -> 
     gen_expr e' asm_channel; 
     gen_unop unop asm_channel
+  | _ -> failwith "Unimplemented" 
 
 let gen_fun_body body asm_channel =
   let Return e = body in

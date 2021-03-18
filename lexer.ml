@@ -7,6 +7,9 @@ type token =
   | CLOSED_BRACE
   | RETURN
   | SEMICOLON
+  | PLUS
+  | TIMES
+  | DIVIDE
   | NEG
   | BIT_COMP
   | LOG_NEG
@@ -25,6 +28,9 @@ let token_to_string = function
   | RETURN -> "RETURN"
   | INT i -> "INT<" ^ (string_of_int i) ^ ">"
   | SEMICOLON -> ";"
+  | PLUS -> "+"
+  | TIMES -> "*"
+  | DIVIDE -> "/"
   | NEG -> "-"
   | BIT_COMP -> "~"
   | LOG_NEG -> "!"
@@ -47,6 +53,9 @@ let rec tokenize lexbuf =
   | '{' -> OPEN_BRACE
   | '}' -> CLOSED_BRACE
   | ';' -> SEMICOLON
+  | '+' -> PLUS
+  | '*' -> TIMES
+  | '/' -> DIVIDE
   | '-' -> NEG
   | '~' -> BIT_COMP
   | '!' -> LOG_NEG

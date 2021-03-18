@@ -1,7 +1,8 @@
 open Lexer
 
-type op = Neg | Bitwise_comp | Logical_neg 
-type expr = Unop of op * expr | Const of int
+type unop = Neg | Bitwise_comp | Logical_neg 
+type binop = Minus | Plus | Times | Divide
+type expr = Binop of expr * binop * expr | Unop of unop * expr | Const of int
 type statement = Return of expr
 type parameter = Param of string
 type fun_header = Fun_Header of string * parameter list
@@ -13,6 +14,13 @@ exception End_of_file
 
 let get_token = tokenize
 
+let peek lexbuf = 
+    let tok = get_token lexbuf in
+    Sedlexing.rollback lexbuf;
+    tok
+
+let consume_token lexbuf = ignore(get_token lexbuf)
+
 let build_level_str level = 
   let rec create_spaces acc level =
     if level = 0 then acc 
@@ -21,16 +29,25 @@ let build_level_str level =
   let spaces_lst = create_spaces [] level in
   String.concat " " spaces_lst
 
-let pp_op op =
-  match op with
+let pp_unop unop =
+  match unop with
   | Neg -> print_char '-'
   | Bitwise_comp -> print_char '~'
   | Logical_neg -> print_char '!'
 
+let pp_binop binop = 
+  match binop with
+  | Minus -> print_char '-'
+  | Plus -> print_char '+'
+  | Times -> print_char '*'
+  | Divide -> print_char '/'
+
 let rec pp_expr e =
   match e with
   | Const i -> print_string (string_of_int i)
-  | Unop (op, e') -> pp_op op; pp_expr e'
+  | Unop (unop, e') -> pp_unop unop; pp_expr e'
+  | Binop (lhe, binop, rhe) ->
+          begin pp_expr lhe; pp_binop binop; pp_expr rhe end
 
 let rec pp_params params =
   match params with
@@ -89,23 +106,53 @@ let parse_fun_header lexbuf =
     Fun_Header (n, args)
   | _ -> raise Parsing_exception
 
-let op_of_token tok =
+let unop_of_token tok =
   match tok with
   | NEG -> Neg
   | BIT_COMP -> Bitwise_comp
   | LOG_NEG -> Logical_neg
   | _ -> raise Parsing_exception
 
+let binop_of_token tok = 
+  match tok with
+  | NEG -> Minus
+  | PLUS -> Plus
+  | TIMES -> Times
+  | DIVIDE -> Divide
+  | _ -> raise Parsing_exception
+
 let rec parse_unop t lexbuf =
-  let op = op_of_token t in
+  let op = unop_of_token t in
   Unop (op, parse_expression lexbuf)
+
+and parse_binop peeked lhe lexbuf = 
+  match peeked with
+  | NEG
+  | PLUS
+  | TIMES
+  | DIVIDE -> 
+    consume_token lexbuf;
+    let rhe = parse_expression lexbuf in
+    Binop (lhe, binop_of_token peeked, rhe)
+  | SEMICOLON
+  | CLOSED_PAREN -> lhe 
+  | _ -> raise Parsing_exception
+  
 and parse_expression lexbuf =
   let t = get_token lexbuf in
   match t with
-  | INT i -> Const i
+  | INT i -> 
+    let peeked = peek lexbuf in
+    let lhe = Const i in
+    parse_binop peeked lhe lexbuf
   | NEG 
   | BIT_COMP 
   | LOG_NEG -> parse_unop t lexbuf
+  | OPEN_PAREN ->
+    let e = parse_expression lexbuf in
+    let tok = get_token lexbuf in
+    if tok = CLOSED_PAREN then e
+    else raise Parsing_exception
   | _ -> raise Parsing_exception
 
 let parse_statement lexbuf = 
