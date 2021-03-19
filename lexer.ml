@@ -21,8 +21,8 @@ exception Invalid_token of string
 let token_to_string = function
   | INT_T -> "INT_T"
   | ID s -> "ID " ^ s
-  | OPEN_PAREN -> ")"
-  | CLOSED_PAREN -> "("
+  | OPEN_PAREN -> "("
+  | CLOSED_PAREN -> ")"
   | OPEN_BRACE -> "{"
   | CLOSED_BRACE -> "}"
   | RETURN -> "RETURN"

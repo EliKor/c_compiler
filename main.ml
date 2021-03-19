@@ -23,6 +23,19 @@ let lex path =
   in
   aux lexbuf
 
+let parse_program path =
+  let channel = open_in path in
+  let lexbuf = Sedlexing.Utf8.from_channel channel in
+  let _ = try
+    let program = parse lexbuf channel in
+    pp_program program
+  with Parsing_exception e ->
+    match e with
+    | None -> print_endline "unknown parsing exception occurred"
+    | Some t -> print_endline ("parsing exception occurred due to invalid token: "  ^ (token_to_string t))
+  in
+  close_in channel
+
 let compile path = 
   let program_name = get_program_name path in
   let channel = open_in path in
@@ -39,5 +52,5 @@ let () =
   match args with
   | [] 
   | _::[] -> print_endline "Please provide a file to compile"
-  | _::path::[] -> compile path
+  | _::path::[] -> parse_program path
   | _ -> print_endline "Please provide only a single file"
