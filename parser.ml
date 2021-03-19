@@ -134,16 +134,28 @@ let binop_of_token tok =
   | DIVIDE -> Divide
   | _ -> raise (Parsing_exception (Some tok))
 
+let get_next_prec tok =
+    match tok with
+    | NEG 
+    | PLUS -> 2
+    | TIMES
+    | DIVIDE -> 3
+    | SEMICOLON
+    | CLOSED_PAREN -> 0
+    | _ -> raise (Parsing_exception None)
 
+let unop_prec = 6
 
 let rec parse_unop op lexbuf = 
-    Unop (op, parse_expression lexbuf 3) in
-and parse_parens lexbuf prec =
-    let lhe = parse_expression lexbuf prec in
+    let e = parse_expression lexbuf unop_prec in
+    Unop (op, e)
+and parse_parens lexbuf =
+    let lhe = parse_expression lexbuf 0 in
     expect_and_consume lexbuf CLOSED_PAREN;
-and parse_binop tok lhe lexbuf = 
+    lhe
+and parse_binop tok lhe lexbuf next_prec = 
     let op = binop_of_token tok in
-    let rhe = parse_expression lexbuf 3 in
+    let rhe = parse_expression lexbuf next_prec in
     Binop (lhe, op, rhe)
 and parse_expression lexbuf prec =
   let t = get_token lexbuf in
@@ -156,14 +168,17 @@ and parse_expression lexbuf prec =
     | OPEN_PAREN -> parse_parens lexbuf
     | _ -> raise (Parsing_exception (Some t))
   in
-  let peeked = peek lexbuf
-  match peeked with
-  | NEG
-  | PLUS
-  | TIMES
-  | DIVIDE ->  
-  | SEMICOLON
-  | CLOSED_PAREN -> lhe
+  let rec aux lexbuf lhe =
+    let next_prec = get_next_prec (peek lexbuf) in
+    if prec >= next_prec then lhe
+    else
+      begin
+      let tok = get_token lexbuf in
+      let new_lhe = parse_binop tok lhe lexbuf next_prec in
+      aux lexbuf new_lhe
+      end
+  in
+  aux lexbuf lhe
 
 let parse_statement lexbuf = 
   let ret = get_token lexbuf in
